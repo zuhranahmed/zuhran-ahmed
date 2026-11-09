@@ -72,6 +72,12 @@
     "follow_on_shop_eligiblity": "For the button to show, the Shop channel must be installed and Shop Pay activated. [Learn more](https://help.shopify.com/en/manual/online-store/themes/customizing-themes/add-shop-buttons)",
     "gift_card_form_description": "Customers can send gift cards to a recipient's email with a personal message. [Learn more](https://help.shopify.com/manual/products/gift-card-products)",
     "gift_card_products": "Gift card products",
+    "gift_guide_banner": {
+      "top_bar": "Top bar",
+      "hero": "Hero",
+      "bottom_strip": "Bottom strip",
+      "style": "Style"
+    },
     "local_pickup": "Local pickup",
     "local_pickup_description": "Show nearby pickup locations when online store local pickup is set up. [Learn more](https://help.shopify.com/en/manual/fulfillment/setup/delivery-methods/pickup-in-store)",
     "fonts": "Fonts",
@@ -239,6 +245,13 @@
     "grid_layout_on_mobile": "Grid layout is used for mobile",
     "hide_logo_on_home_page_help": "Logo will remain visible when sticky header is active",
     "hover_effects": "Applies to product and collection cards",
+    "gift_guide_banner": {
+      "logo": "Replaces the brand name text. The brand name is still used as alt text.",
+      "image": "Leave empty to use the built-in line illustration",
+      "mobile_text": "Shown below 990px. Leave empty to reuse the main text.",
+      "mobile_strip_text": "Shown below 990px. Leave empty to reuse the strip text.",
+      "hide_theme_header_footer": "Use on a standalone landing page. The banner's own bar replaces the theme header."
+    },
     "logo_font": "Applies only when a logo is not selected",
     "logo_height": "Only affects header logo",
     "page_text_color_default_info": "Default for theme sections",
@@ -253,6 +266,7 @@
     "media_type_info": "Features are populated from your menu links"
   },
   "names": {
+    "gift_guide_banner": "Gift guide banner",
     "column": "Column",
     "product_title": "Product title",
     "custom_liquid": "Custom Liquid",
@@ -891,6 +905,27 @@
     // CSS Y-axis transform setting for vertical positioning (legacy/unused)
     "geometric_translate_y": "Geometric translate Y",
     "gift_card_form": "Gift card form",
+    "gift_guide_banner": {
+      "brand_name": "Brand name",
+      "logo": "Logo",
+      "tagline": "Tagline",
+      "choose_gift_label": "Gift button label",
+      "choose_gift_link": "Gift button link",
+      "heading": "Heading",
+      "text": "Text",
+      "mobile_text": "Mobile text",
+      "shop_now_label": "Shop button label",
+      "shop_now_link": "Shop button link",
+      "image": "Illustration",
+      "strip_text": "Strip text",
+      "mobile_strip_text": "Mobile strip text",
+      "font": "Font",
+      "background_color": "Background",
+      "bar_color": "Bar and strip background",
+      "text_color": "Text and button",
+      "accent_color": "Accent and hover",
+      "hide_theme_header_footer": "Hide theme header and footer"
+    },
     "gradient_direction": "Gradient direction",
     "heading": "Heading",
     "heading_preset": "Heading preset",

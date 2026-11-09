@@ -1,0 +1,18 @@
+{% doc %}
+  Renders the long right arrow used on the gift guide buttons. It inherits the button's text
+  colour and is mirrored in RTL by sections/gift-guide-banner.liquid.
+
+  @example
+  {% render 'gift-guide-arrow' %}
+{% enddoc %}
+<svg
+  class="gift-banner__arrow"
+  aria-hidden="true"
+  focusable="false"
+  width="27"
+  height="11"
+  viewBox="0 0 27 11"
+  fill="none"
+>
+  <path d="M.75 5.5h25M21.5.75l4.75 4.75-4.75 4.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
