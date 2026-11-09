@@ -1,0 +1,686 @@
+{% comment %}
+  Section contract.
+  Gift guide landing banner: a brand bar (brand, tagline, gift button), a hero with the
+  line illustration, heading, text and shop button, and a bottom announcement strip.
+  Below 990px the bar collapses into a hamburger menu owned by <gift-guide-menu>
+  (assets/gift-guide-banner.js); every visible string is a section setting.
+  @example
+  <!-- templates/page.gift-guide.json → "banner": { "type": "gift-guide-banner" } -->
+{% endcomment %}
+
+{% liquid
+  assign font = section.settings.font
+  assign font_medium = font | font_modify: 'weight', '500' | default: font
+
+  assign menu_id = 'GiftGuideMenu-' | append: section.id
+  assign heading_tag = 'h2'
+  assign loading = 'lazy'
+  assign fetch_priority = 'auto'
+  if section.index == 1
+    assign heading_tag = 'h1'
+    assign loading = 'eager'
+    assign fetch_priority = 'high'
+  endif
+
+  assign choose_gift_link = section.settings.choose_gift_link | default: routes.all_products_collection_url
+  assign shop_now_link = section.settings.shop_now_link | default: routes.all_products_collection_url
+  assign mobile_text = section.settings.mobile_text | default: section.settings.text
+  assign mobile_strip_text = section.settings.mobile_strip_text | default: section.settings.strip_text
+%}
+
+{% style %}
+  {%- comment -%} Landing-page mode: drop the theme's header and footer groups from this page. {%- endcomment -%}
+  {%- if section.settings.hide_theme_header_footer -%}
+    #header-group,
+    .page-wrapper > footer {
+      display: none;
+    }
+  {%- endif %}
+
+  {{ font | font_face: font_display: 'swap' }}
+  {%- if font_medium != font -%}
+    {{ font_medium | font_face: font_display: 'swap' }}
+  {%- endif %}
+
+  #shopify-section-{{ section.id }} {
+    --gift-banner-font-family: {{ font.family }}, {{ font.fallback_families }};
+    --gift-banner-font-weight: {{ font.weight }};
+    --gift-banner-font-weight-medium: {{ font_medium.weight }};
+    --gift-banner-background: {{ section.settings.background_color }};
+    --gift-banner-bar: {{ section.settings.bar_color }};
+    --gift-banner-ink: {{ section.settings.text_color }};
+    --gift-banner-accent: {{ section.settings.accent_color }};
+  }
+{% endstyle %}
+
+<div class="gift-banner">
+  <gift-guide-menu class="gift-banner__bar">
+    <div class="gift-banner__bar-row">
+      <button
+        type="button"
+        class="gift-banner__toggle"
+        aria-expanded="false"
+        aria-controls="{{ menu_id }}"
+        aria-label="{{ 'accessibility.menu' | t }}"
+        data-menu-toggle
+      >
+        <svg
+          class="gift-banner__toggle-icon gift-banner__toggle-icon--open"
+          aria-hidden="true"
+          focusable="false"
+          width="18"
+          height="10"
+          viewBox="0 0 18 10"
+          fill="none"
+        >
+          <path d="M0 .5h18M0 5h18M0 9.5h18" stroke="currentColor"/>
+        </svg>
+        <svg
+          class="gift-banner__toggle-icon gift-banner__toggle-icon--close"
+          aria-hidden="true"
+          focusable="false"
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="none"
+        >
+          <path d="m1 1 12 12M13 1 1 13" stroke="currentColor" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <a class="gift-banner__brand" href="{{ routes.root_url }}">
+        {%- if section.settings.logo != blank -%}
+          {{
+            section.settings.logo
+            | image_url: width: 302
+            | image_tag: class: 'gift-banner__logo', alt: section.settings.brand_name
+          }}
+        {%- else -%}
+          {{ section.settings.brand_name | escape }}
+        {%- endif -%}
+      </a>
+    </div>
+
+    <div class="gift-banner__menu" id="{{ menu_id }}">
+      {%- if section.settings.tagline != blank -%}
+        <p class="gift-banner__tagline">{{ section.settings.tagline | escape }}</p>
+      {%- endif -%}
+      {%- if section.settings.choose_gift_label != blank -%}
+        <a class="gift-button gift-button--accent gift-banner__choose" href="{{ choose_gift_link }}">
+          <span>{{ section.settings.choose_gift_label | escape }}</span>
+          {%- render 'gift-guide-arrow' -%}
+        </a>
+      {%- endif -%}
+    </div>
+  </gift-guide-menu>
+
+  <div class="gift-banner__hero">
+    <div class="gift-banner__art">
+      {%- if section.settings.image != blank -%}
+        {{
+          section.settings.image
+          | image_url: width: 2880
+          | image_tag:
+            class: 'gift-banner__art-image',
+            widths: '750, 1100, 1500, 1920, 2400, 2880',
+            sizes: '100vw',
+            loading: loading,
+            fetchpriority: fetch_priority,
+            alt: ''
+        }}
+      {%- else -%}
+        {%- comment -%}
+          Decorative line art from the design, split in two so it scales with the hero. Below 990px
+          the design shows only the lower-right group (watch, lenses, cameras), so the picture swaps
+          in that piece and phones download a single file.
+        {%- endcomment -%}
+        <picture>
+          <source
+            media="(max-width: 989px)"
+            srcset="{{ 'gift-guide-illustration-bottom.svg' | asset_url }}"
+            width="890"
+            height="402"
+          >
+          <img
+            class="gift-banner__art-top"
+            src="{{ 'gift-guide-illustration-top.svg' | asset_url }}"
+            width="1440"
+            height="390"
+            alt=""
+            loading="{{ loading }}"
+            fetchpriority="{{ fetch_priority }}"
+          >
+        </picture>
+        {%- comment -%} Desktop only. Lazy, so the mobile layout, which hides it, never downloads it. {%- endcomment -%}
+        <img
+          class="gift-banner__art-bottom"
+          src="{{ 'gift-guide-illustration-bottom.svg' | asset_url }}"
+          width="890"
+          height="402"
+          alt=""
+          loading="lazy"
+        >
+      {%- endif -%}
+    </div>
+
+    <div class="gift-banner__content">
+      {%- if section.settings.heading != blank -%}
+        <{{ heading_tag }} class="gift-banner__heading">{{ section.settings.heading | escape }}</{{ heading_tag }}>
+      {%- endif -%}
+
+      {%- if section.settings.text != blank or mobile_text != blank -%}
+        <p class="gift-banner__text">
+          <span class="gift-banner__desktop-only">{{ section.settings.text | escape | newline_to_br }}</span>
+          <span class="gift-banner__mobile-only">{{ mobile_text | escape | newline_to_br }}</span>
+        </p>
+      {%- endif -%}
+
+      {%- if section.settings.shop_now_label != blank -%}
+        <a class="gift-button gift-banner__shop" href="{{ shop_now_link }}">
+          <span>{{ section.settings.shop_now_label | escape }}</span>
+          {%- render 'gift-guide-arrow' -%}
+        </a>
+      {%- endif -%}
+    </div>
+  </div>
+
+  {%- if section.settings.strip_text != blank or mobile_strip_text != blank -%}
+    <p class="gift-banner__strip">
+      <span class="gift-banner__desktop-only">{{ section.settings.strip_text | escape }}</span>
+      <span class="gift-banner__mobile-only">{{ mobile_strip_text | escape }}</span>
+    </p>
+  {%- endif -%}
+</div>
+
+{% render 'gift-guide-button-styles' %}
+<script src="{{ 'gift-guide-banner.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  /*
+   * Desktop measurements come from the 1440px-wide design. --gift-banner-unit is one design
+   * pixel at the section's current width, so the hero and its art keep the design's proportions.
+   */
+  .gift-banner {
+    --gift-banner-unit: calc(100cqi / 1440);
+    --gift-button-ink: var(--gift-banner-ink);
+    --gift-button-paper: var(--gift-banner-background);
+    --gift-button-accent: var(--gift-banner-accent);
+
+    container-type: inline-size;
+    background-color: var(--gift-banner-background);
+    color: var(--gift-banner-ink);
+    font-family: var(--gift-banner-font-family);
+    font-weight: var(--gift-banner-font-weight);
+  }
+
+  /* Zero-specificity reset, so each element's own margin rule below wins. */
+  :where(.gift-banner) :where(p, h1, h2) {
+    margin: 0;
+  }
+
+  /* Brand bar (mobile first: hamburger row + collapsible panel). The mobile design uses a slightly
+     lighter bar (#f7f7f7) and darker panel (#f2f2f2) than the desktop bar (#f5f5f5), so both
+     are derived from the merchant's bar colour. */
+  .gift-banner__bar {
+    display: block;
+    position: relative;
+    z-index: 2;
+    background-color: color-mix(in srgb, var(--gift-banner-bar) 80%, #fff);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 0.15);
+  }
+
+  .gift-banner__bar-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 23px 16px;
+  }
+
+  .gift-banner__toggle {
+    display: inline-grid;
+    place-items: center;
+    justify-self: start;
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    margin: -17px -13px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .gift-banner__toggle-icon--close,
+  .gift-banner__toggle[aria-expanded='true'] .gift-banner__toggle-icon--open {
+    display: none;
+  }
+
+  .gift-banner__toggle[aria-expanded='true'] .gift-banner__toggle-icon--close {
+    display: block;
+  }
+
+  .gift-banner__brand {
+    grid-column: 2;
+    color: inherit;
+    font-size: 22px;
+    font-weight: var(--gift-banner-font-weight-medium);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .gift-banner__logo {
+    display: block;
+    inline-size: auto;
+    block-size: 19px;
+  }
+
+  .gift-banner__menu {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 16px 32px;
+    background-color: color-mix(in srgb, var(--gift-banner-bar) 98.8%, #000);
+    text-align: center;
+  }
+
+  .gift-banner__bar[open] .gift-banner__menu {
+    display: flex;
+  }
+
+  /* Until the script defines the element, keep the menu reachable and hide the dead toggle. */
+  .gift-banner__bar:not(:defined) .gift-banner__menu {
+    display: flex;
+  }
+
+  .gift-banner__bar:not(:defined) .gift-banner__toggle {
+    visibility: hidden;
+  }
+
+  .gift-banner__tagline {
+    font-size: 16px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  /* Button look and hover wipe come from snippets/gift-guide-button-styles.liquid. */
+  .gift-banner .gift-banner__choose {
+    min-inline-size: 244px;
+    min-block-size: 44px;
+  }
+
+  /* Hero (mobile first). The content wrapper dissolves into the grid so the button can sit on the art. */
+  .gift-banner__hero {
+    display: grid;
+    grid-template-areas:
+      'heading'
+      'text'
+      'art';
+    grid-template-rows: auto auto 1fr;
+    min-block-size: 421px;
+    padding-block-start: 46px;
+    text-align: center;
+  }
+
+  .gift-banner__content {
+    display: contents;
+  }
+
+  .gift-banner__heading {
+    grid-area: heading;
+    padding-inline: 16px;
+    font-family: inherit;
+    font-size: 30px;
+    font-weight: var(--gift-banner-font-weight-medium);
+    line-height: 1.1;
+    letter-spacing: normal;
+    text-transform: none;
+    color: inherit;
+    overflow-wrap: anywhere;
+  }
+
+  .gift-banner__text {
+    grid-area: text;
+    justify-self: center;
+    max-inline-size: min(340px, calc(100% - 32px));
+    min-width: 0;
+    margin-block-start: 26px;
+    font-size: 16px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .gift-banner__art {
+    grid-area: art;
+    position: relative;
+    min-block-size: 250px;
+    margin-block-start: 10px;
+    overflow: hidden;
+  }
+
+  .gift-banner__art img {
+    display: block;
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  /* Mobile crop of the lower-right group, matching the design's framing. */
+  .gift-banner__art .gift-banner__art-top {
+    object-position: 85% center;
+  }
+
+  .gift-banner__art .gift-banner__art-bottom {
+    display: none;
+  }
+
+  .gift-banner__hero .gift-banner__shop {
+    --gift-button-text: var(--gift-banner-bar);
+
+    grid-area: art;
+    align-self: end;
+    justify-self: center;
+    z-index: 1;
+    gap: 24px;
+    min-block-size: 44px;
+    margin-block-end: 34px;
+    padding: 13px 20px;
+  }
+
+  .gift-banner__strip {
+    padding: 8px 16px;
+    background-color: var(--gift-banner-bar);
+    font-size: 14px;
+    line-height: 1.3;
+    text-align: center;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .gift-banner__desktop-only {
+    display: none;
+  }
+
+  @media screen and (min-width: 990px) {
+    .gift-banner__desktop-only {
+      display: inline;
+    }
+
+    .gift-banner__mobile-only {
+      display: none;
+    }
+
+    /* Bar: brand, tagline and gift button on one row; the toggle is not needed. */
+    .gift-banner__bar {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      min-block-size: 64px;
+      padding: 10px 50px;
+      background-color: var(--gift-banner-bar);
+      box-shadow: none;
+    }
+
+    .gift-banner__bar-row {
+      display: block;
+      padding: 0;
+    }
+
+    .gift-banner__toggle {
+      display: none;
+    }
+
+    .gift-banner__brand {
+      font-size: 24px;
+    }
+
+    .gift-banner__menu,
+    .gift-banner__bar:not(:defined) .gift-banner__menu {
+      display: grid;
+      flex: 1;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 24px;
+      padding: 0;
+      background: none;
+    }
+
+    .gift-banner .gift-banner__choose {
+      min-inline-size: 207px;
+    }
+
+    /* Hero: art fills the frame, content sits centred in the empty lower-left quarter. */
+    .gift-banner__hero {
+      position: relative;
+      grid-template-areas: none;
+      grid-template-rows: 1fr 1fr;
+      min-block-size: calc(780 * var(--gift-banner-unit));
+      padding: 0;
+      text-align: start;
+    }
+
+    /* Reset the mobile grid-area: the desktop grid has no "art" area, and an absolutely
+       positioned item placed against a missing area collapses to zero width. */
+    .gift-banner__art {
+      grid-area: auto;
+      position: absolute;
+      inset: 0;
+      min-block-size: 0;
+      margin: 0;
+    }
+
+    .gift-banner__art .gift-banner__art-top {
+      inset-block: 0 auto;
+      block-size: 50%;
+      object-fit: contain;
+      object-position: top;
+    }
+
+    .gift-banner__art .gift-banner__art-bottom {
+      display: block;
+      inset-block: auto 0;
+      inset-inline: auto 0;
+      inline-size: calc(890 / 1440 * 100%);
+      block-size: calc(402 / 780 * 100%);
+      object-fit: contain;
+      object-position: bottom;
+    }
+
+    .gift-banner__content {
+      display: flex;
+      position: relative;
+      grid-row: 2;
+      flex-direction: column;
+      align-items: flex-start;
+      align-self: center;
+      gap: calc(24 * var(--gift-banner-unit));
+      min-width: 0;
+      padding-inline-start: calc(67 * var(--gift-banner-unit));
+    }
+
+    .gift-banner__heading {
+      padding: 0;
+      font-size: clamp(44px, calc(70 * var(--gift-banner-unit)), 96px);
+      line-height: 1;
+    }
+
+    .gift-banner__text {
+      justify-self: auto;
+      max-inline-size: calc(483 * var(--gift-banner-unit));
+      margin: 0;
+      padding: 0;
+      font-size: max(16px, calc(20 * var(--gift-banner-unit)));
+      line-height: 1.4;
+    }
+
+    .gift-banner__hero .gift-banner__shop {
+      align-self: flex-start;
+      min-inline-size: 220px;
+      min-block-size: 50px;
+      --gift-button-text: var(--gift-banner-background);
+
+      gap: 14px;
+      margin: calc(16 * var(--gift-banner-unit)) 0 0;
+      padding: 12px 24px;
+    }
+
+    .gift-banner__strip {
+      display: grid;
+      place-items: center;
+      min-block-size: 34px;
+      padding-block: 6px;
+      font-size: 16px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.gift_guide_banner",
+  "tag": "section",
+  "class": "gift-guide-banner-section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:content.gift_guide_banner.top_bar"
+    },
+    {
+      "type": "text",
+      "id": "brand_name",
+      "label": "t:settings.gift_guide_banner.brand_name",
+      "default": "TISSO VISON"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "t:settings.gift_guide_banner.logo",
+      "info": "t:info.gift_guide_banner.logo"
+    },
+    {
+      "type": "text",
+      "id": "tagline",
+      "label": "t:settings.gift_guide_banner.tagline",
+      "default": "Find the ideal gift for your loved ones."
+    },
+    {
+      "type": "text",
+      "id": "choose_gift_label",
+      "label": "t:settings.gift_guide_banner.choose_gift_label",
+      "default": "Choose gift"
+    },
+    {
+      "type": "url",
+      "id": "choose_gift_link",
+      "label": "t:settings.gift_guide_banner.choose_gift_link"
+    },
+    {
+      "type": "header",
+      "content": "t:content.gift_guide_banner.hero"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:settings.gift_guide_banner.heading",
+      "default": "The Gift Guide"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "t:settings.gift_guide_banner.text",
+      "default": "Discover Joy: Your Ultimate Holiday Gift Destination. Explore our curated selection and find the perfect gifts to delight your loved ones this holiday season."
+    },
+    {
+      "type": "textarea",
+      "id": "mobile_text",
+      "label": "t:settings.gift_guide_banner.mobile_text",
+      "info": "t:info.gift_guide_banner.mobile_text",
+      "default": "Discover Joy: Your Ultimate Holiday Gift Destination."
+    },
+    {
+      "type": "text",
+      "id": "shop_now_label",
+      "label": "t:settings.gift_guide_banner.shop_now_label",
+      "default": "Shop now"
+    },
+    {
+      "type": "url",
+      "id": "shop_now_link",
+      "label": "t:settings.gift_guide_banner.shop_now_link"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:settings.gift_guide_banner.image",
+      "info": "t:info.gift_guide_banner.image"
+    },
+    {
+      "type": "header",
+      "content": "t:content.gift_guide_banner.bottom_strip"
+    },
+    {
+      "type": "text",
+      "id": "strip_text",
+      "label": "t:settings.gift_guide_banner.strip_text",
+      "default": "Sustainable, ethically made clothes in sizes XXS to 6XL"
+    },
+    {
+      "type": "text",
+      "id": "mobile_strip_text",
+      "label": "t:settings.gift_guide_banner.mobile_strip_text",
+      "info": "t:info.gift_guide_banner.mobile_strip_text",
+      "default": "Sustainable, ethically made activewear"
+    },
+    {
+      "type": "header",
+      "content": "t:content.gift_guide_banner.style"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_theme_header_footer",
+      "label": "t:settings.gift_guide_banner.hide_theme_header_footer",
+      "info": "t:info.gift_guide_banner.hide_theme_header_footer",
+      "default": false
+    },
+    {
+      "type": "font_picker",
+      "id": "font",
+      "label": "t:settings.gift_guide_banner.font",
+      "default": "jost_n4"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:settings.gift_guide_banner.background_color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "bar_color",
+      "label": "t:settings.gift_guide_banner.bar_color",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "t:settings.gift_guide_banner.text_color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "t:settings.gift_guide_banner.accent_color",
+      "default": "#fff544"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.gift_guide_banner",
+      "category": "t:categories.banners"
+    }
+  ]
+}
+{% endschema %}
