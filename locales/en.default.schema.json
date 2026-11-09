@@ -927,7 +927,9 @@
       "product": "Product",
       "image": "Photo",
       "hotspot_x": "Hotspot horizontal position",
-      "hotspot_y": "Hotspot vertical position"
+      "hotspot_y": "Hotspot vertical position",
+      "hotspot_x_mobile": "Mobile hotspot horizontal position",
+      "hotspot_y_mobile": "Mobile hotspot vertical position"
     },
     "gift_guide_banner": {
       "brand_name": "Brand name",

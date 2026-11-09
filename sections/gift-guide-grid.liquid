@@ -98,13 +98,13 @@
             data-text-error="{{ 'gift_guide.add_error' | t | escape }}"
           >
             {%- comment -%}
-              Positions use physical left/top on purpose: they point at a spot in the photo,
-              and the photo is not mirrored in right-to-left languages.
+              The hotspot points at a spot in the photo. Mobile crops the photo differently, so it
+              has its own position (the stylesheet picks the pair per breakpoint).
             {%- endcomment -%}
             <button
               type="button"
               class="gift-grid__hotspot"
-              style="left: {{ block.settings.hotspot_x }}%; top: {{ block.settings.hotspot_y }}%;"
+              style="--hotspot-x: {{ block.settings.hotspot_x }}%; --hotspot-y: {{ block.settings.hotspot_y }}%; --hotspot-x-mobile: {{ block.settings.hotspot_x_mobile }}%; --hotspot-y-mobile: {{ block.settings.hotspot_y_mobile }}%;"
               aria-haspopup="dialog"
               aria-controls="{{ popup_id }}"
               aria-label="{{ 'gift_guide.view_product' | t: title: product.title | escape }}"
@@ -370,9 +370,12 @@
     display: contents;
   }
 
+  /* Physical left/top on purpose: the photo is not mirrored in right-to-left languages. */
   .gift-grid__hotspot {
     display: grid;
     position: absolute;
+    top: var(--hotspot-y-mobile);
+    left: var(--hotspot-x-mobile);
     place-items: center;
     inline-size: 16px;
     block-size: 16px;
@@ -413,9 +416,12 @@
       padding-inline: 50px;
     }
 
+    /* Desktop heading aligns with the grid's start edge; mobile centres it. */
     .gift-grid__heading {
-      margin-block-end: 30px;
+      max-inline-size: 1337px;
+      margin: 0 auto 30px;
       font-size: 36px;
+      text-align: start;
     }
 
     /* Desktop: three columns of 433 × 444 tiles with 20px gaps. */
@@ -429,6 +435,8 @@
     }
 
     .gift-grid__hotspot {
+      top: var(--hotspot-y);
+      left: var(--hotspot-x);
       inline-size: 22px;
       block-size: 22px;
     }
@@ -470,7 +478,7 @@
     padding: 36px 20px 26px;
   }
 
-  .gift-popup p {
+  :where(.gift-popup) p {
     margin: 0;
   }
 
@@ -620,9 +628,9 @@
     content: '';
     position: absolute;
     inset-block: 0;
-    inset-inline-start: 2px;
+    inset-inline-start: 0;
     inline-size: 4px;
-    border-inline: 0.5px solid var(--gift-grid-ink);
+    border-inline-end: 0.5px solid var(--gift-grid-ink);
     background-color: var(--swatch-color, transparent);
   }
 
@@ -847,6 +855,26 @@
           "step": 1,
           "unit": "%",
           "default": 50
+        },
+        {
+          "type": "range",
+          "id": "hotspot_x_mobile",
+          "label": "t:settings.gift_guide_grid.hotspot_x_mobile",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "default": 64
+        },
+        {
+          "type": "range",
+          "id": "hotspot_y_mobile",
+          "label": "t:settings.gift_guide_grid.hotspot_y_mobile",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "default": 14
         }
       ]
     }

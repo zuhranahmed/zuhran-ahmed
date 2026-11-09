@@ -13,7 +13,7 @@
 {% enddoc %}
 
 {% stylesheet %}
-  /* A 1px strip of the hover colour sits on the start edge and wipes across on hover. */
+  /* On hover the fill colour wipes across from the start edge. */
   .gift-button {
     --gift-button-fill: var(--gift-button-ink, #000);
     --gift-button-text: var(--gift-button-paper, #fff);
@@ -55,7 +55,6 @@
     --gift-button-wipe-text: var(--gift-button-paper, #fff);
   }
 
-  .gift-button::before,
   .gift-button::after {
     content: '';
     position: absolute;
@@ -63,13 +62,6 @@
     inset-block: 0;
     inset-inline-start: 0;
     background-color: var(--gift-button-wipe);
-  }
-
-  .gift-button::before {
-    inline-size: 1px;
-  }
-
-  .gift-button::after {
     inline-size: 100%;
     transform: scaleX(0);
     transform-origin: left;

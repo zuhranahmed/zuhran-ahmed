@@ -129,17 +129,29 @@
             alt: ''
         }}
       {%- else -%}
-        {%- comment -%} Decorative line art from the design, split in two so it scales with the hero. {%- endcomment -%}
-        <img
-          class="gift-banner__art-top"
-          src="{{ 'gift-guide-illustration-top.svg' | asset_url }}"
-          width="1440"
-          height="390"
-          alt=""
-          loading="{{ loading }}"
-          fetchpriority="{{ fetch_priority }}"
-        >
-        {%- comment -%} Lazy so the mobile layout, which hides this piece, never downloads it. {%- endcomment -%}
+        {%- comment -%}
+          Decorative line art from the design, split in two so it scales with the hero. Below 990px
+          the design shows only the lower-right group (watch, lenses, cameras), so the picture swaps
+          in that piece and phones download a single file.
+        {%- endcomment -%}
+        <picture>
+          <source
+            media="(max-width: 989px)"
+            srcset="{{ 'gift-guide-illustration-bottom.svg' | asset_url }}"
+            width="890"
+            height="402"
+          >
+          <img
+            class="gift-banner__art-top"
+            src="{{ 'gift-guide-illustration-top.svg' | asset_url }}"
+            width="1440"
+            height="390"
+            alt=""
+            loading="{{ loading }}"
+            fetchpriority="{{ fetch_priority }}"
+          >
+        </picture>
+        {%- comment -%} Desktop only. Lazy, so the mobile layout, which hides it, never downloads it. {%- endcomment -%}
         <img
           class="gift-banner__art-bottom"
           src="{{ 'gift-guide-illustration-bottom.svg' | asset_url }}"
@@ -201,17 +213,19 @@
     font-weight: var(--gift-banner-font-weight);
   }
 
-  .gift-banner p,
-  .gift-banner__heading {
+  /* Zero-specificity reset, so each element's own margin rule below wins. */
+  :where(.gift-banner) :where(p, h1, h2) {
     margin: 0;
   }
 
-  /* Brand bar (mobile first: hamburger row + collapsible panel) */
+  /* Brand bar (mobile first: hamburger row + collapsible panel). The mobile design uses a slightly
+     lighter bar (#f7f7f7) and darker panel (#f2f2f2) than the desktop bar (#f5f5f5), so both
+     are derived from the merchant's bar colour. */
   .gift-banner__bar {
     display: block;
     position: relative;
     z-index: 2;
-    background-color: var(--gift-banner-bar);
+    background-color: color-mix(in srgb, var(--gift-banner-bar) 80%, #fff);
     box-shadow: 0 2px 4px rgb(0 0 0 / 0.15);
   }
 
@@ -268,7 +282,7 @@
     align-items: center;
     gap: 16px;
     padding: 24px 16px 32px;
-    background-color: color-mix(in srgb, var(--gift-banner-bar) 98.5%, #000);
+    background-color: color-mix(in srgb, var(--gift-banner-bar) 98.8%, #000);
     text-align: center;
   }
 
@@ -306,7 +320,7 @@
       'art';
     grid-template-rows: auto auto 1fr;
     min-block-size: 421px;
-    padding-block-start: 32px;
+    padding-block-start: 46px;
     text-align: center;
   }
 
@@ -330,10 +344,9 @@
   .gift-banner__text {
     grid-area: text;
     justify-self: center;
-    max-inline-size: 340px;
+    max-inline-size: min(340px, calc(100% - 32px));
     min-width: 0;
-    margin-block-start: 12px;
-    padding-inline: 16px;
+    margin-block-start: 26px;
     font-size: 16px;
     line-height: 1.3;
     overflow-wrap: anywhere;
@@ -343,7 +356,7 @@
     grid-area: art;
     position: relative;
     min-block-size: 250px;
-    margin-block-start: 16px;
+    margin-block-start: 10px;
     overflow: hidden;
   }
 
@@ -356,15 +369,23 @@
     object-fit: cover;
   }
 
+  /* Mobile crop of the lower-right group, matching the design's framing. */
+  .gift-banner__art .gift-banner__art-top {
+    object-position: 85% center;
+  }
+
   .gift-banner__art .gift-banner__art-bottom {
     display: none;
   }
 
   .gift-banner__hero .gift-banner__shop {
+    --gift-button-text: var(--gift-banner-bar);
+
     grid-area: art;
     align-self: end;
     justify-self: center;
     z-index: 1;
+    gap: 24px;
     min-block-size: 44px;
     margin-block-end: 34px;
     padding: 13px 20px;
@@ -400,6 +421,7 @@
       gap: 24px;
       min-block-size: 64px;
       padding: 10px 50px;
+      background-color: var(--gift-banner-bar);
       box-shadow: none;
     }
 
@@ -499,6 +521,9 @@
       align-self: flex-start;
       min-inline-size: 220px;
       min-block-size: 50px;
+      --gift-button-text: var(--gift-banner-background);
+
+      gap: 14px;
       margin: calc(16 * var(--gift-banner-unit)) 0 0;
       padding: 12px 24px;
     }
