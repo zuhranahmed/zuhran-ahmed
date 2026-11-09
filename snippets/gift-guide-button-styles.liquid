@@ -1,0 +1,126 @@
+{% doc %}
+  Style owner for the gift guide buttons (`.gift-button`), shared by the gift guide banner and
+  the product grid popup. Render it from every section that outputs `.gift-button` markup so the
+  CSS is delivered wherever the buttons appear.
+
+  The owning section sets three colours on an ancestor:
+  `--gift-button-ink` (dark fill and text), `--gift-button-paper` (light text) and
+  `--gift-button-accent` (hover wipe).
+
+  @example
+  {% render 'gift-guide-button-styles' %}
+  <a class="gift-button" href="/collections/all">Shop now {% render 'gift-guide-arrow' %}</a>
+{% enddoc %}
+
+{% stylesheet %}
+  /* A 1px strip of the hover colour sits on the start edge and wipes across on hover. */
+  .gift-button {
+    --gift-button-fill: var(--gift-button-ink, #000);
+    --gift-button-text: var(--gift-button-paper, #fff);
+    --gift-button-wipe: var(--gift-button-accent, #fff544);
+    --gift-button-wipe-text: var(--gift-button-ink, #000);
+    --gift-button-duration: calc(var(--animation-speed-slow) * 2);
+
+    display: inline-flex;
+    position: relative;
+    isolation: isolate;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    min-block-size: 50px;
+    max-inline-size: 100%;
+    margin: 0;
+    padding: 12px 24px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background-color: var(--gift-button-fill);
+    color: var(--gift-button-text);
+    font: inherit;
+    font-size: 16px;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      color var(--gift-button-duration) var(--animation-timing-hover),
+      box-shadow var(--gift-button-duration) var(--animation-timing-hover);
+  }
+
+  .gift-button--accent {
+    --gift-button-fill: var(--gift-button-accent, #fff544);
+    --gift-button-text: var(--gift-button-ink, #000);
+    --gift-button-wipe: var(--gift-button-ink, #000);
+    --gift-button-wipe-text: var(--gift-button-paper, #fff);
+  }
+
+  .gift-button::before,
+  .gift-button::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset-block: 0;
+    inset-inline-start: 0;
+    background-color: var(--gift-button-wipe);
+  }
+
+  .gift-button::before {
+    inline-size: 1px;
+  }
+
+  .gift-button::after {
+    inline-size: 100%;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--gift-button-duration) var(--animation-timing-hover);
+  }
+
+  .gift-button:dir(rtl)::after {
+    transform-origin: right;
+  }
+
+  .gift-button:is(:hover, :focus-visible):not(:disabled, [aria-disabled='true']) {
+    color: var(--gift-button-wipe-text);
+    box-shadow: 0 2px 2px rgb(0 0 0 / 0.2);
+  }
+
+  .gift-button:is(:hover, :focus-visible):not(:disabled, [aria-disabled='true'])::after {
+    transform: scaleX(1);
+  }
+
+  .gift-button:focus-visible {
+    outline: 2px solid var(--gift-button-ink, #000);
+    outline-offset: 3px;
+  }
+
+  .gift-button:is(:disabled, [aria-disabled='true']) {
+    cursor: not-allowed;
+    opacity: var(--opacity-70, 0.7);
+  }
+
+  .gift-button__arrow {
+    flex-shrink: 0;
+    transition: transform var(--gift-button-duration) var(--animation-timing-hover);
+  }
+
+  .gift-button__arrow:dir(rtl) {
+    scale: -1 1;
+  }
+
+  .gift-button:hover:not(:disabled) .gift-button__arrow {
+    transform: translateX(4px);
+  }
+
+  .gift-button:dir(rtl):hover:not(:disabled) .gift-button__arrow {
+    transform: translateX(-4px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gift-button,
+    .gift-button::after,
+    .gift-button__arrow {
+      transition: none;
+    }
+  }
+{% endstylesheet %}

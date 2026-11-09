@@ -14,9 +14,75 @@
       "settings": {
         "hide_theme_header_footer": true
       }
+    },
+    "grid": {
+      "type": "gift-guide-grid",
+      "blocks": {
+        "tile-1": {
+          "type": "product_tile",
+          "settings": {
+            "hotspot_x": 62,
+            "hotspot_y": 56,
+            "product": "black-leather-bag"
+          }
+        },
+        "tile-2": {
+          "type": "product_tile",
+          "settings": {
+            "hotspot_x": 85,
+            "hotspot_y": 52,
+            "product": "blue-silk-tuxedo"
+          }
+        },
+        "tile-3": {
+          "type": "product_tile",
+          "settings": {
+            "hotspot_x": 63,
+            "hotspot_y": 21,
+            "product": "chequered-red-shirt"
+          }
+        },
+        "tile-4": {
+          "type": "product_tile",
+          "settings": {
+            "hotspot_x": 72,
+            "hotspot_y": 18,
+            "product": "classic-leather-jacket"
+          }
+        },
+        "tile-5": {
+          "type": "product_tile",
+          "settings": {
+            "hotspot_x": 52,
+            "hotspot_y": 26,
+            "product": "classic-varsity-top"
+          }
+        },
+        "tile-6": {
+          "type": "product_tile",
+          "settings": {
+            "hotspot_x": 76,
+            "hotspot_y": 39,
+            "product": "dark-denim-top"
+          }
+        }
+      },
+      "block_order": [
+        "tile-1",
+        "tile-2",
+        "tile-3",
+        "tile-4",
+        "tile-5",
+        "tile-6"
+      ],
+      "settings": {
+        "gift_trigger": "Black, M",
+        "gift_product": "dark-winter-jacket"
+      }
     }
   },
   "order": [
-    "banner"
+    "banner",
+    "grid"
   ]
 }

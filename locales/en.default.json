@@ -343,6 +343,12 @@
     // Separates min and max values in price range filter
     "separator": "to"
   },
+  "gift_guide": {
+    "view_product": "View {{ title }}",
+    "choose_option": "Choose your {{ name }}",
+    "choose_option_error": "Please choose your {{ name }}.",
+    "add_error": "This item couldn't be added to your cart. Please try again."
+  },
   "gift_cards": {
     "issued": {
       "how_to_use_gift_card": "Use the gift card code online or QR code in-store",

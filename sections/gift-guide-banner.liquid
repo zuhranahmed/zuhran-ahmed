@@ -106,7 +106,7 @@
         <p class="gift-banner__tagline">{{ section.settings.tagline | escape }}</p>
       {%- endif -%}
       {%- if section.settings.choose_gift_label != blank -%}
-        <a class="gift-banner__button gift-banner__button--accent" href="{{ choose_gift_link }}">
+        <a class="gift-button gift-button--accent gift-banner__choose" href="{{ choose_gift_link }}">
           <span>{{ section.settings.choose_gift_label | escape }}</span>
           {%- render 'gift-guide-arrow' -%}
         </a>
@@ -164,7 +164,7 @@
       {%- endif -%}
 
       {%- if section.settings.shop_now_label != blank -%}
-        <a class="gift-banner__button gift-banner__button--primary" href="{{ shop_now_link }}">
+        <a class="gift-button gift-banner__shop" href="{{ shop_now_link }}">
           <span>{{ section.settings.shop_now_label | escape }}</span>
           {%- render 'gift-guide-arrow' -%}
         </a>
@@ -180,6 +180,7 @@
   {%- endif -%}
 </div>
 
+{% render 'gift-guide-button-styles' %}
 <script src="{{ 'gift-guide-banner.js' | asset_url }}" type="module"></script>
 
 {% stylesheet %}
@@ -189,7 +190,9 @@
    */
   .gift-banner {
     --gift-banner-unit: calc(100cqi / 1440);
-    --gift-banner-wipe-duration: calc(var(--animation-speed-slow) * 2);
+    --gift-button-ink: var(--gift-banner-ink);
+    --gift-button-paper: var(--gift-banner-background);
+    --gift-button-accent: var(--gift-banner-accent);
 
     container-type: inline-size;
     background-color: var(--gift-banner-background);
@@ -288,101 +291,10 @@
     overflow-wrap: anywhere;
   }
 
-  /* Buttons: a 1px strip of the hover colour sits on the start edge and wipes across on hover. */
-  .gift-banner__button {
-    --gift-banner-button-fill: var(--gift-banner-ink);
-    --gift-banner-button-text: var(--gift-banner-background);
-    --gift-banner-button-wipe: var(--gift-banner-accent);
-    --gift-banner-button-wipe-text: var(--gift-banner-ink);
-
-    display: inline-flex;
-    position: relative;
-    isolation: isolate;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    min-block-size: 50px;
-    max-inline-size: 100%;
-    padding: 12px 24px;
-    overflow: hidden;
-    background-color: var(--gift-banner-button-fill);
-    color: var(--gift-banner-button-text);
-    font-size: 16px;
-    line-height: 1.2;
-    text-align: center;
-    text-decoration: none;
-    text-transform: uppercase;
-    transition:
-      color var(--gift-banner-wipe-duration) var(--animation-timing-hover),
-      box-shadow var(--gift-banner-wipe-duration) var(--animation-timing-hover);
-  }
-
-  .gift-banner__button::before,
-  .gift-banner__button::after {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    inset-block: 0;
-    inset-inline-start: 0;
-    background-color: var(--gift-banner-button-wipe);
-  }
-
-  .gift-banner__button::before {
-    inline-size: 1px;
-  }
-
-  .gift-banner__button::after {
-    inline-size: 100%;
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform var(--gift-banner-wipe-duration) var(--animation-timing-hover);
-  }
-
-  .gift-banner__button:dir(rtl)::after {
-    transform-origin: right;
-  }
-
-  .gift-banner__button:hover,
-  .gift-banner__button:focus-visible {
-    color: var(--gift-banner-button-wipe-text);
-    box-shadow: 0 2px 2px rgb(0 0 0 / 0.2);
-  }
-
-  .gift-banner__button:hover::after,
-  .gift-banner__button:focus-visible::after {
-    transform: scaleX(1);
-  }
-
-  .gift-banner__button:focus-visible {
-    outline: 2px solid var(--gift-banner-ink);
-    outline-offset: 3px;
-  }
-
-  .gift-banner__button--accent {
-    --gift-banner-button-fill: var(--gift-banner-accent);
-    --gift-banner-button-text: var(--gift-banner-ink);
-    --gift-banner-button-wipe: var(--gift-banner-ink);
-    --gift-banner-button-wipe-text: var(--gift-banner-background);
-
+  /* Button look and hover wipe come from snippets/gift-guide-button-styles.liquid. */
+  .gift-banner .gift-banner__choose {
     min-inline-size: 244px;
     min-block-size: 44px;
-  }
-
-  .gift-banner__arrow {
-    flex-shrink: 0;
-    transition: transform var(--gift-banner-wipe-duration) var(--animation-timing-hover);
-  }
-
-  .gift-banner__arrow:dir(rtl) {
-    scale: -1 1;
-  }
-
-  .gift-banner__button:hover .gift-banner__arrow {
-    transform: translateX(4px);
-  }
-
-  .gift-banner__button:dir(rtl):hover .gift-banner__arrow {
-    transform: translateX(-4px);
   }
 
   /* Hero (mobile first). The content wrapper dissolves into the grid so the button can sit on the art. */
@@ -448,7 +360,7 @@
     display: none;
   }
 
-  .gift-banner__hero .gift-banner__button--primary {
+  .gift-banner__hero .gift-banner__shop {
     grid-area: art;
     align-self: end;
     justify-self: center;
@@ -515,7 +427,7 @@
       background: none;
     }
 
-    .gift-banner__button--accent {
+    .gift-banner .gift-banner__choose {
       min-inline-size: 207px;
     }
 
@@ -583,7 +495,7 @@
       line-height: 1.4;
     }
 
-    .gift-banner__hero .gift-banner__button--primary {
+    .gift-banner__hero .gift-banner__shop {
       align-self: flex-start;
       min-inline-size: 220px;
       min-block-size: 50px;
@@ -597,14 +509,6 @@
       min-block-size: 34px;
       padding-block: 6px;
       font-size: 16px;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .gift-banner__button,
-    .gift-banner__button::after,
-    .gift-banner__arrow {
-      transition: none;
     }
   }
 {% endstylesheet %}

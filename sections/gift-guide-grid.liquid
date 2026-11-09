@@ -1,0 +1,869 @@
+{% comment %}
+  Section contract.
+  Gift guide product grid: up to six photo tiles, each with a "+" hotspot that opens a quick-view
+  popup (<dialog>) for the tile's product. The popup renders the product's name, price,
+  description and options from Liquid; <gift-guide-hotspot> (assets/gift-guide-grid.js) resolves
+  the chosen variant, adds it to the cart, and adds the gift product when the variant matches the
+  gift trigger options (default: Black + M, the store's Medium size → the selected gift product).
+  @example
+  <!-- templates/page.gift-guide.json → "grid": { "type": "gift-guide-grid", blocks: 6 × product_tile } -->
+{% endcomment %}
+
+{% liquid
+  assign font = section.settings.font
+  assign font_light = font | font_modify: 'weight', '300' | default: font
+
+  # The gift is only offered when it can actually be bought; otherwise the add request would fail.
+  assign gift_variant_id = ''
+  assign gift_variant = section.settings.gift_product.selected_or_first_available_variant
+  if gift_variant.available
+    assign gift_variant_id = gift_variant.id
+  endif
+
+  assign cart_add_url = routes.cart_add_url
+  assign cart_url = routes.cart_url
+%}
+
+{% style %}
+  {{ font | font_face: font_display: 'swap' }}
+  {%- if font_light != font -%}
+    {{ font_light | font_face: font_display: 'swap' }}
+  {%- endif %}
+
+  {%- comment -%} Lustria is not in Shopify's font library, so it ships with the theme (OFL licence). {%- endcomment %}
+  @font-face {
+    font-family: 'Lustria';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('{{ 'lustria-regular.woff2' | asset_url }}') format('woff2');
+  }
+
+  #shopify-section-{{ section.id }} {
+    --gift-grid-font-family: {{ font.family }}, {{ font.fallback_families }};
+    --gift-grid-font-weight: {{ font.weight }};
+    --gift-grid-font-weight-light: {{ font_light.weight }};
+    --gift-grid-background: {{ section.settings.background_color }};
+    --gift-grid-ink: {{ section.settings.text_color }};
+    --gift-grid-accent: {{ section.settings.accent_color }};
+    --gift-grid-padding-block-start: {{ section.settings.padding-block-start }}px;
+    --gift-grid-padding-block-end: {{ section.settings.padding-block-end }}px;
+  }
+{% endstyle %}
+
+<div class="gift-grid">
+  {%- if section.settings.heading != blank -%}
+    <h2 class="gift-grid__heading">{{ section.settings.heading | escape }}</h2>
+  {%- endif -%}
+
+  <ul class="gift-grid__list" role="list">
+    {%- for block in section.blocks -%}
+      {%- liquid
+        assign product = block.settings.product
+        assign tile_image = block.settings.image | default: product.featured_image
+        assign popup_id = 'GiftPopup-' | append: block.id
+      -%}
+      <li class="gift-grid__tile" {{ block.shopify_attributes }}>
+        {%- if tile_image != blank -%}
+          {{
+            tile_image
+            | image_url: width: 1300
+            | image_tag:
+              class: 'gift-grid__image',
+              widths: '240, 360, 480, 720, 900, 1300',
+              sizes: '(min-width: 750px) calc((min(100vw, 1440px) - 143px) / 3), calc((100vw - 36px) / 2)',
+              loading: 'lazy'
+          }}
+        {%- else -%}
+          <div class="gift-grid__image gift-grid__image--empty"></div>
+        {%- endif -%}
+
+        {%- if product != blank -%}
+          {%- liquid
+            assign current_variant = product.selected_or_first_available_variant
+            assign has_options = true
+            if product.has_only_default_variant
+              assign has_options = false
+            endif
+          -%}
+          <gift-guide-hotspot
+            class="gift-grid__hotspot-root"
+            data-cart-add-url="{{ cart_add_url }}"
+            data-cart-url="{{ cart_url }}"
+            data-gift-variant-id="{{ gift_variant_id }}"
+            data-gift-trigger="{{ section.settings.gift_trigger | escape }}"
+            data-text-add="{{ 'products.product.add_to_cart' | t | escape }}"
+            data-text-sold-out="{{ 'products.product.sold_out' | t | escape }}"
+            data-text-unavailable="{{ 'products.product.unavailable' | t | escape }}"
+            data-text-error="{{ 'gift_guide.add_error' | t | escape }}"
+          >
+            {%- comment -%}
+              Positions use physical left/top on purpose: they point at a spot in the photo,
+              and the photo is not mirrored in right-to-left languages.
+            {%- endcomment -%}
+            <button
+              type="button"
+              class="gift-grid__hotspot"
+              style="left: {{ block.settings.hotspot_x }}%; top: {{ block.settings.hotspot_y }}%;"
+              aria-haspopup="dialog"
+              aria-controls="{{ popup_id }}"
+              aria-label="{{ 'gift_guide.view_product' | t: title: product.title | escape }}"
+              data-popup-open
+            >
+              <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 22 22" fill="none">
+                <circle cx="11" cy="11" r="11" fill="currentColor"/>
+                <path d="M11 7v8M7 11h8" stroke="#000" stroke-width="1.5" stroke-linecap="square"/>
+              </svg>
+            </button>
+
+            <dialog
+              class="gift-popup"
+              id="{{ popup_id }}"
+              aria-labelledby="{{ popup_id }}-title"
+              data-popup
+            >
+              <div class="gift-popup__panel">
+                <form method="dialog" class="gift-popup__close-form">
+                  <button type="submit" class="gift-popup__close" aria-label="{{ 'actions.close' | t | escape }}">
+                    <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="m1.5 1.5 11 11m0-11-11 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/>
+                    </svg>
+                  </button>
+                </form>
+
+                <div class="gift-popup__summary">
+                  <div class="gift-popup__media">
+                    {%- if product.featured_image != blank -%}
+                      {{
+                        product.featured_image
+                        | image_url: width: 240
+                        | image_tag:
+                          class: 'gift-popup__image',
+                          widths: '120, 240',
+                          sizes: '120px',
+                          loading: 'lazy'
+                      }}
+                    {%- endif -%}
+                  </div>
+                  <div class="gift-popup__details">
+                    <h3 class="gift-popup__title" id="{{ popup_id }}-title">{{ product.title | escape }}</h3>
+                    <p class="gift-popup__price" data-price>{{ current_variant.price | money }}</p>
+                    {%- if product.description != blank -%}
+                      <p class="gift-popup__description">{{ product.description | strip_html | truncatewords: 18 }}</p>
+                    {%- endif -%}
+                  </div>
+                </div>
+
+                <form
+                  class="gift-popup__form"
+                  action="{{ cart_add_url }}"
+                  method="post"
+                  novalidate
+                  data-product-form
+                >
+                  <input type="hidden" name="id" value="{{ current_variant.id }}" data-variant-id>
+                  <input type="hidden" name="quantity" value="1">
+
+                  {%- if has_options -%}
+                    {%- comment -%}
+                      The design shows colour before size whatever the product's option order, so colour
+                      options render in a first pass and the rest in a second. data-option-position tells
+                      the script which variant option each field maps to.
+                    {%- endcomment -%}
+                    {%- for pass in (1..2) -%}
+                    {%- for option in product.options_with_values -%}
+                      {%- liquid
+                        assign option_name = option.name | downcase
+                        assign option_input_name = popup_id | append: '-option-' | append: option.position
+                        assign is_color = false
+                        if option_name == 'color' or option_name == 'colour'
+                          assign is_color = true
+                        endif
+                        assign render_now = false
+                        if pass == 1 and is_color
+                          assign render_now = true
+                        elsif pass == 2 and is_color == false
+                          assign render_now = true
+                        endif
+                      -%}
+                      {%- unless render_now -%}
+                        {%- continue -%}
+                      {%- endunless -%}
+                      {%- if is_color -%}
+                        {%- comment -%} Colour: a row of segmented buttons, unselected until the shopper picks one (as in the design). {%- endcomment -%}
+                        <fieldset
+                          class="gift-popup__field"
+                          data-option
+                          data-option-position="{{ option.position }}"
+                          data-required-message="{{ 'gift_guide.choose_option_error' | t: name: option_name | escape }}"
+                        >
+                          <legend class="gift-popup__label">{{ option.name | escape }}</legend>
+                          <div class="gift-popup__swatches">
+                            {%- for value in option.values -%}
+                              {%- liquid
+                                assign swatch_color = value | downcase
+                                if value.swatch.color
+                                  assign swatch_color = value.swatch.color
+                                endif
+                              -%}
+                              <label class="gift-popup__swatch" style="--swatch-color: {{ swatch_color | escape }};">
+                                <input
+                                  class="gift-popup__input"
+                                  type="radio"
+                                  name="{{ option_input_name }}"
+                                  value="{{ value | escape }}"
+                                >
+                                <span>{{ value | escape }}</span>
+                              </label>
+                            {%- endfor -%}
+                          </div>
+                        </fieldset>
+                      {%- else -%}
+                        {%- comment -%} Other options (size): a "Choose your …" dropdown, intentionally unselected. {%- endcomment -%}
+                        {%- assign choose_text = 'gift_guide.choose_option' | t: name: option_name -%}
+                        <div
+                          class="gift-popup__field"
+                          data-option
+                          data-option-position="{{ option.position }}"
+                          data-required-message="{{ 'gift_guide.choose_option_error' | t: name: option_name | escape }}"
+                        >
+                          <span class="gift-popup__label" id="{{ option_input_name }}-label">{{ option.name | escape }}</span>
+                          <details class="gift-popup__dropdown" data-dropdown>
+                            <summary class="gift-popup__dropdown-toggle" aria-describedby="{{ option_input_name }}-label">
+                              <span class="gift-popup__dropdown-value" data-dropdown-value data-placeholder="{{ choose_text | escape }}">
+                                {{- choose_text | escape -}}
+                              </span>
+                              <span class="gift-popup__chevron">
+                                <svg aria-hidden="true" focusable="false" width="14" height="8" viewBox="0 0 14 8" fill="none">
+                                  <path d="m1 1 6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/>
+                                </svg>
+                              </span>
+                            </summary>
+                            <div
+                              class="gift-popup__dropdown-list"
+                              role="radiogroup"
+                              aria-labelledby="{{ option_input_name }}-label"
+                            >
+                              {%- for value in option.values -%}
+                                <label class="gift-popup__dropdown-option">
+                                  <input
+                                    class="gift-popup__input"
+                                    type="radio"
+                                    name="{{ option_input_name }}"
+                                    value="{{ value | escape }}"
+                                  >
+                                  <span>{{ value | escape }}</span>
+                                </label>
+                              {%- endfor -%}
+                            </div>
+                          </details>
+                        </div>
+                      {%- endif -%}
+                    {%- endfor -%}
+                    {%- endfor -%}
+                  {%- endif -%}
+
+                  <p class="gift-popup__message" role="status" data-message></p>
+
+                  <button
+                    type="submit"
+                    class="gift-button gift-popup__submit"
+                    {% unless current_variant.available %}
+                      disabled
+                    {% endunless %}
+                    data-submit
+                  >
+                    <span data-submit-label>
+                      {%- if current_variant.available -%}
+                        {{ 'products.product.add_to_cart' | t }}
+                      {%- else -%}
+                        {{ 'products.product.sold_out' | t }}
+                      {%- endif -%}
+                    </span>
+                    {%- render 'gift-guide-arrow' -%}
+                  </button>
+                </form>
+
+                {%- comment -%} Variant lookup table for the script: option values → id, stock, price, image. {%- endcomment -%}
+                <script type="application/json" data-variants>
+                  [
+                    {%- for variant in product.variants -%}
+                      {
+                        "id": {{ variant.id }},
+                        "available": {{ variant.available | json }},
+                        "options": {{ variant.options | json }},
+                        "price": {{ variant.price | money | strip_html | json }},
+                        "image": {% if variant.featured_image %}{{ variant.featured_image | image_url: width: 240 | json }}{% else %}null{% endif %}
+                      }
+                      {%- unless forloop.last -%},{%- endunless -%}
+                    {%- endfor -%}
+                  ]
+                </script>
+              </div>
+            </dialog>
+          </gift-guide-hotspot>
+        {%- endif -%}
+      </li>
+    {%- endfor -%}
+  </ul>
+</div>
+
+{% render 'gift-guide-button-styles' %}
+<script src="{{ 'gift-guide-grid.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  .gift-grid {
+    --gift-button-ink: var(--gift-grid-ink);
+    --gift-button-paper: var(--gift-grid-background);
+    --gift-button-accent: var(--gift-grid-accent);
+
+    padding: var(--gift-grid-padding-block-start) 16px var(--gift-grid-padding-block-end);
+    background-color: var(--gift-grid-background);
+    color: var(--gift-grid-ink);
+    font-family: var(--gift-grid-font-family);
+    font-weight: var(--gift-grid-font-weight);
+  }
+
+  .gift-grid__heading {
+    margin: 0 0 20px;
+    color: inherit;
+    font-family: 'Lustria', serif;
+    font-size: 24px;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: normal;
+    text-align: center;
+    text-transform: none;
+    overflow-wrap: anywhere;
+  }
+
+  /* Mobile: two columns of 169 × 186 tiles with 4px gaps. */
+  .gift-grid__list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    max-inline-size: 1337px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gift-grid__tile {
+    position: relative;
+    min-width: 0;
+    aspect-ratio: 169 / 186.42;
+  }
+
+  .gift-grid__image {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .gift-grid__image--empty {
+    background-color: rgb(0 0 0 / 0.06);
+  }
+
+  .gift-grid__hotspot-root {
+    display: contents;
+  }
+
+  .gift-grid__hotspot {
+    display: grid;
+    position: absolute;
+    place-items: center;
+    inline-size: 16px;
+    block-size: 16px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: rgb(248 248 248 / 0.9);
+    cursor: pointer;
+    transform: translate(-50%, -50%);
+    transition: transform var(--animation-speed-medium) var(--animation-timing-hover);
+  }
+
+  /* Keeps a 44px touch target around the small visible icon. */
+  .gift-grid__hotspot::before {
+    content: '';
+    position: absolute;
+    inset: -14px;
+  }
+
+  .gift-grid__hotspot svg {
+    inline-size: 100%;
+    block-size: 100%;
+    filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.25));
+  }
+
+  .gift-grid__hotspot:hover {
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+
+  .gift-grid__hotspot:focus-visible {
+    outline: 2px solid var(--gift-grid-ink);
+    outline-offset: 3px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .gift-grid {
+      padding-inline: 50px;
+    }
+
+    .gift-grid__heading {
+      margin-block-end: 30px;
+      font-size: 36px;
+    }
+
+    /* Desktop: three columns of 433 × 444 tiles with 20px gaps. */
+    .gift-grid__list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .gift-grid__tile {
+      aspect-ratio: 433 / 444;
+    }
+
+    .gift-grid__hotspot {
+      inline-size: 22px;
+      block-size: 22px;
+    }
+
+    .gift-grid__hotspot::before {
+      inset: -11px;
+    }
+  }
+
+  /* Popup (311px wide card in the design). */
+  .gift-popup {
+    inline-size: min(311px, calc(100vw - 32px));
+    max-inline-size: none;
+    max-block-size: calc(100dvh - 32px);
+    margin: auto;
+    padding: 0;
+    overflow: auto;
+    border: 0;
+    background-color: var(--gift-grid-background);
+    box-shadow: 0 2px 2px rgb(0 0 0 / 0.2);
+    color: var(--gift-grid-ink);
+    font-family: var(--gift-grid-font-family);
+    font-weight: var(--gift-grid-font-weight-light);
+  }
+
+  .gift-popup::backdrop {
+    background-color: rgb(0 0 0 / 0.25);
+  }
+
+  :root:has(.gift-popup[open]) {
+    overflow: hidden;
+  }
+
+  .gift-popup__panel {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    gap: 20px;
+    padding: 36px 20px 26px;
+  }
+
+  .gift-popup p {
+    margin: 0;
+  }
+
+  .gift-popup__close-form {
+    position: absolute;
+    inset-block-start: 4px;
+    inset-inline-end: 4px;
+  }
+
+  .gift-popup__close {
+    display: grid;
+    place-items: center;
+    inline-size: 32px;
+    block-size: 32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .gift-popup__close:focus-visible,
+  .gift-popup__dropdown-toggle:focus-visible,
+  .gift-popup__swatch:has(:focus-visible),
+  .gift-popup__dropdown-option:has(:focus-visible) {
+    outline: 2px solid var(--gift-grid-ink);
+    outline-offset: 2px;
+  }
+
+  .gift-popup__summary {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+
+  .gift-popup__media {
+    aspect-ratio: 120 / 140;
+    background-color: rgb(0 0 0 / 0.04);
+  }
+
+  .gift-popup__image {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .gift-popup__details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .gift-popup__title {
+    margin: 0;
+    color: inherit;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: var(--gift-grid-font-weight-light);
+    line-height: 1.2;
+    letter-spacing: normal;
+    text-transform: none;
+    overflow-wrap: anywhere;
+  }
+
+  .gift-popup__price {
+    font-family: 'Lustria', serif;
+    font-size: 16px;
+    line-height: 1.2;
+  }
+
+  .gift-popup__description {
+    font-size: 14px;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+
+  .gift-popup__form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .gift-popup__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .gift-popup__label {
+    padding: 0;
+    color: color-mix(in srgb, var(--gift-grid-ink) 80%, var(--gift-grid-background));
+    font-size: 14px;
+    font-weight: var(--gift-grid-font-weight);
+    line-height: 1.2;
+  }
+
+  /* Radios stay in the accessibility tree and cover their label, so clicks and keys work natively. */
+  .gift-popup__input {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    min-block-size: 0;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  /* Colour: one bordered row split into equal segments, each with a swatch strip on its start edge. */
+  .gift-popup__swatches {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    border: 0.5px solid var(--gift-grid-ink);
+  }
+
+  .gift-popup__swatch {
+    display: grid;
+    position: relative;
+    align-items: center;
+    min-block-size: 40px;
+    padding: 6px 12px 6px 16px;
+    font-size: 18px;
+    font-weight: var(--gift-grid-font-weight);
+    line-height: 1.2;
+    text-align: start;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+    transition:
+      background-color var(--animation-speed-medium) var(--animation-easing),
+      color var(--animation-speed-medium) var(--animation-easing);
+  }
+
+  .gift-popup__swatch + .gift-popup__swatch {
+    border-inline-start: 0.5px solid var(--gift-grid-ink);
+  }
+
+  .gift-popup__swatch::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 2px;
+    inline-size: 4px;
+    border-inline: 0.5px solid var(--gift-grid-ink);
+    background-color: var(--swatch-color, transparent);
+  }
+
+  .gift-popup__swatch:has(:checked) {
+    background-color: var(--gift-grid-ink);
+    color: var(--gift-grid-background);
+  }
+
+  /* Size: a "Choose your size" box with a divided chevron cell. The open list stays in flow so the
+     popup grows with it instead of clipping it. */
+
+  /* Resets the theme's global summary padding and hover colour (assets/base.css). */
+  .gift-popup__dropdown-toggle,
+  .gift-popup__dropdown-toggle:hover {
+    padding: 0;
+    color: inherit;
+  }
+
+  .gift-popup__dropdown-toggle {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 54px;
+    align-items: stretch;
+    min-block-size: 40px;
+    border: 0.5px solid var(--gift-grid-ink);
+    font-size: 16px;
+    font-weight: var(--gift-grid-font-weight);
+    line-height: 1.2;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .gift-popup__dropdown-toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .gift-popup__dropdown-value {
+    align-self: center;
+    padding: 8px 12px;
+    text-align: start;
+    overflow-wrap: anywhere;
+  }
+
+  .gift-popup__chevron {
+    display: grid;
+    place-items: center;
+    border-inline-start: 0.5px solid var(--gift-grid-ink);
+  }
+
+  .gift-popup__chevron svg {
+    transition: transform var(--animation-speed-medium) var(--animation-easing);
+  }
+
+  .gift-popup__dropdown[open] .gift-popup__chevron svg {
+    transform: rotate(180deg);
+  }
+
+  .gift-popup__dropdown-list {
+    display: flex;
+    flex-direction: column;
+    max-block-size: 163px;
+    overflow-y: auto;
+    border: 0.5px solid var(--gift-grid-ink);
+    border-block-start: 0;
+    background-color: var(--gift-grid-background);
+  }
+
+  .gift-popup__dropdown-option {
+    display: grid;
+    position: relative;
+    flex-shrink: 0;
+    place-items: center;
+    min-block-size: 36px;
+    font-size: 16px;
+    font-weight: var(--gift-grid-font-weight);
+    cursor: pointer;
+  }
+
+  .gift-popup__dropdown-option:hover {
+    background-color: color-mix(in srgb, var(--gift-grid-ink) 8%, var(--gift-grid-background));
+  }
+
+  .gift-popup__dropdown-option:has(:checked) {
+    background-color: var(--gift-grid-ink);
+    color: var(--gift-grid-background);
+  }
+
+  .gift-popup__message {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .gift-popup__message:empty {
+    display: none;
+  }
+
+  .gift-popup .gift-popup__submit {
+    inline-size: 100%;
+    min-block-size: 45px;
+    margin-block-start: 32px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gift-grid__hotspot,
+    .gift-popup__swatch,
+    .gift-popup__chevron svg {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.gift_guide_grid",
+  "tag": "section",
+  "class": "gift-guide-grid-section",
+  "max_blocks": 6,
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:settings.gift_guide_grid.heading",
+      "default": "Tisso vison in the wild"
+    },
+    {
+      "type": "header",
+      "content": "t:content.gift_guide_grid.gift"
+    },
+    {
+      "type": "product",
+      "id": "gift_product",
+      "label": "t:settings.gift_guide_grid.gift_product",
+      "info": "t:info.gift_guide_grid.gift_product"
+    },
+    {
+      "type": "text",
+      "id": "gift_trigger",
+      "label": "t:settings.gift_guide_grid.gift_trigger",
+      "info": "t:info.gift_guide_grid.gift_trigger",
+      "default": "Black, M"
+    },
+    {
+      "type": "header",
+      "content": "t:content.gift_guide_grid.style"
+    },
+    {
+      "type": "font_picker",
+      "id": "font",
+      "label": "t:settings.gift_guide_grid.font",
+      "default": "jost_n4"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:settings.gift_guide_grid.background_color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "t:settings.gift_guide_grid.text_color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "t:settings.gift_guide_grid.accent_color",
+      "default": "#fff544"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product_tile",
+      "name": "t:names.gift_guide_grid_tile",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "t:settings.gift_guide_grid.product"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "t:settings.gift_guide_grid.image",
+          "info": "t:info.gift_guide_grid.image"
+        },
+        {
+          "type": "range",
+          "id": "hotspot_x",
+          "label": "t:settings.gift_guide_grid.hotspot_x",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "default": 50
+        },
+        {
+          "type": "range",
+          "id": "hotspot_y",
+          "label": "t:settings.gift_guide_grid.hotspot_y",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "default": 50
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.gift_guide_grid",
+      "category": "t:categories.products",
+      "blocks": [
+        { "type": "product_tile", "settings": { "hotspot_x": 62, "hotspot_y": 56 } },
+        { "type": "product_tile", "settings": { "hotspot_x": 85, "hotspot_y": 52 } },
+        { "type": "product_tile", "settings": { "hotspot_x": 63, "hotspot_y": 21 } },
+        { "type": "product_tile", "settings": { "hotspot_x": 72, "hotspot_y": 18 } },
+        { "type": "product_tile", "settings": { "hotspot_x": 52, "hotspot_y": 26 } },
+        { "type": "product_tile", "settings": { "hotspot_x": 76, "hotspot_y": 39 } }
+      ]
+    }
+  ]
+}
+{% endschema %}
